@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <stack>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ struct Provider {
     unordered_map<string, string> profile;
     vector<Service> services;
     queue<Booking> bookings;
+    stack<Service> deletedServices;
 };
 
 void showProfile(const Provider& provider) {
@@ -72,7 +74,7 @@ void showServices(const vector<Service>& services) {
 
     for (int i = 0; i < services.size(); i++) {
         cout << i + 1 << ". " << services[i].name
-             << " - ₱" << services[i].price << endl;
+             << " - $" << services[i].price << endl;
     }
 }
 
@@ -121,27 +123,47 @@ void editService(vector<Service>& services) {
     cout << "Service updated successfully.\n";
 }
 
-void deleteService(vector<Service>& services) {
-    if (services.empty()) {
+void deleteService(Provider& provider) {
+    if (provider.services.empty()) {
         cout << "No services to delete.\n";
         return;
     }
 
-    showServices(services);
+    showServices(provider.services);
 
     int index;
     cout << "Enter service number to delete: ";
     cin >> index;
     cin.ignore();
 
-    if (index < 1 || index > services.size()) {
+    if (index < 1 || index > provider.services.size()) {
         cout << "Invalid service number.\n";
         return;
     }
 
-    services.erase(services.begin() + (index - 1));
+    Service deletedService = provider.services[index - 1];
+
+    provider.deletedServices.push(deletedService);
+    provider.services.erase(provider.services.begin() + (index - 1));
 
     cout << "Service deleted successfully.\n";
+    cout << "Deleted service saved. You can restore it using Undo Restore.\n";
+}
+
+void restoreDeletedService(Provider& provider) {
+    if (provider.deletedServices.empty()) {
+        cout << "No deleted service to restore.\n";
+        return;
+    }
+
+    Service restored = provider.deletedServices.top();
+    provider.deletedServices.pop();
+
+    provider.services.push_back(restored);
+
+    cout << "Last deleted service restored successfully.\n";
+    cout << "Restored service: " << restored.name
+         << " - $" << restored.price << endl;
 }
 
 void searchService(const vector<Service>& services) {
@@ -159,7 +181,7 @@ void searchService(const vector<Service>& services) {
     for (int i = 0; i < services.size(); i++) {
         if (services[i].name == target) {
             cout << "Service found at position " << i + 1 << ": "
-                 << services[i].name << " - ₱" << services[i].price << endl;
+                 << services[i].name << " - $" << services[i].price << endl;
             found = true;
             break;
         }
@@ -356,7 +378,8 @@ int main() {
                     cout << "8. Book Service\n";
                     cout << "9. Serve Next Customer\n";
                     cout << "10. Show Bookings\n";
-                    cout << "11. Back\n";
+                    cout << "11. Restore Last Deleted Service\n";
+                    cout << "12. Back\n";
                     cout << "Enter choice: ";
 
                     cin >> subChoice;
@@ -384,7 +407,7 @@ int main() {
                             break;
 
                         case 6:
-                            deleteService(selected.services);
+                            deleteService(selected);
                             break;
 
                         case 7:
@@ -404,6 +427,10 @@ int main() {
                             break;
 
                         case 11:
+                            restoreDeletedService(selected);
+                            break;
+
+                        case 12:
                             cout << "Returning to main menu.\n";
                             break;
 
@@ -411,7 +438,7 @@ int main() {
                             cout << "Invalid choice.\n";
                     }
 
-                } while (subChoice != 11);
+                } while (subChoice != 12);
 
                 break;
             }
